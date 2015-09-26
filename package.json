@@ -1,0 +1,9 @@
+{
+  "name": "twitterbot",
+  "version": "0.0.0-dev",
+  "description": "Mr. Garvey Twitter Bot",
+  "author": "Blake Renton",
+  "dependencies": {
+    "twitter": "^1.2.5"
+  }
+}
