@@ -63,14 +63,15 @@ var loop = function() {
 
                 // Have we already tweeted to this user?
                 User.find({handle: tweet.user.screen_name}, function(error, data) {
+
                     if (error) {
                         console.log('Unable to connect to database.');
                         return;
                     }
 
-                    else if (typeof data === 'object') {
-                        console.log('Skipping user.');
-                        // return;
+                    else if (data === []) {
+                        console.log('Skipping (' + tweet.user.screen_name + ')');
+                        return;
                     }
 
                     // Create a new user, we don't want to tweet to them again in the future.
