@@ -69,7 +69,7 @@ var loop = function() {
                         return;
                     }
 
-                    else if (data === []) {
+                    else if (data.length > 0) {
                         console.log('Skipping (' + tweet.user.screen_name + ')');
                         return;
                     }
