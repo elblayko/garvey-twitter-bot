@@ -1,4 +1,16 @@
 var Twitter = require('twitter');
+var mongoose = require('mongoose');
+
+mongoose.connect('mongodb://localhost/twitter');
+
+var db = mongoose.connection;
+
+userSchema = mongoose.Schema({
+	handle: String,
+	created_at: String
+});
+
+var User = mongoose.model('User', userSchema);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Application configuration.
@@ -12,8 +24,8 @@ var client = new Twitter({
     access_token_secret: process.env.access_token_secret
 });
 
-var searchString    = "goin to the club OR key and peele club";
-var replyString     = "Ain't none y'all old enough to go to the damn club!";
+global.searchString    = "goin to the club";
+global.replyString     = "Ain't none y'all old enough to go to the damn club!";
 
 /**
  *  @name           loop()
@@ -23,14 +35,18 @@ var replyString     = "Ain't none y'all old enough to go to the damn club!";
 
 var loop = function() {
 
-    // Just output the current time the request was ran at.
-    console.log(new Date());
+	console.log(new Date() + ' Searching for tweets...');
 
-    // Search for tweets.
-    client.get('/search/tweets', {q: searchString, count: 150}, function(error, tweets, response) {
-        if (error) { 
+    client.get('search/tweets', {q: global.searchString, count: 10, result_type: 'recent'}, function(error, tweets, response) {
+        
+        if (error) {
             console.log('An error occured getting tweets. ' + error);
             return;
+        }
+
+        if (tweets.length == 0) {
+        	console.log('No tweets found with search query.');
+        	return;
         }
 
         tweets.statuses.forEach(function(tweet) {
@@ -38,20 +54,45 @@ var loop = function() {
             // Don't reply to retweets.
             if (tweet.retweeted_status == undefined) {
 
+            	User.find({handle: tweet.user.screen_name}, function(error, data) {
+            		if (error) {
+            			console.log('Unable to connect to database.');
+            			return;
+            		}
+
+            		if (typeof data === 'object') {
+            			console.log('Already tweeted to user.');
+            			return;
+            		}
+            	});
+
+            	// Create a user.  We don't want to Tweet to them again.
+            	var newUser = User({
+            		handle: tweet.user.screen_name,
+            		created_at: new Date()
+            	});
+
+            	newUser.save(function(error) {
+            		if (error) {
+            			console.log('Could not save user to database.');
+            			return;
+            		}
+            	});
+
                 // Post a reply to that user.
-                client.post('/statuses/update', {
-                    status: '@' + tweet.user.screen_name + " " + replyString,
+                client.post('statuses/update', {
+                    status: '@' + tweet.user.screen_name + " " + global.replyString,
                     in_reply_to_status_id: tweet.id_str
                 },
 
                 // Handle errors.
                 function(error, tweet, response) {
-                    if (error) { 
-                        console.log(error);
+                    if (error) {
+                        console.log("Can't post tweet because of an error. " + error);
                         return;
                     }
-                    
-                    console.log('Replied to ' + tweet.id_str);
+
+                    console.log('Replied to ' + tweet.user.screen_name + ' with no errors.');
                 });
             }
         });
