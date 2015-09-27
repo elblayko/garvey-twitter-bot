@@ -9,8 +9,8 @@ mongoose.connect('mongodb://localhost/twitter');
 var db = mongoose.connection;
 
 userSchema = mongoose.Schema({
-	handle: String,
-	created_at: String
+    handle: String,
+    created_at: String
 });
 
 var User = mongoose.model('User', userSchema);
@@ -38,9 +38,9 @@ global.replyString     = "Ain't none y'all old enough to go to the damn club!";
 
 var loop = function() {
 
-	console.log('\n' + new Date() + ' Searching for tweets...');
+    console.log('\n' + new Date() + ' Searching for tweets...');
 
-	// Search for 3 tweets only.
+    // Search for 3 tweets only.
     client.get('search/tweets', {q: global.searchString, count: 3, result_type: 'recent'}, function (error, tweets, response) {
 
         if (error) {
@@ -49,63 +49,62 @@ var loop = function() {
         }
 
         if (tweets.length == 0) {
-        	console.log('No tweets found with search query.');
-        	return;
+            console.log('No tweets found with search query.');
+            return;
         }
 
         // We have tweets, let's make some replies.
         tweets.statuses.forEach(function(tweet) {
 
-        	var thisTweet = tweet;
+            var thisTweet = tweet;
 
             // Don't reply to retweets.
             if (tweet.retweeted_status == undefined) {
 
-            	// Have we already tweeted to this user?
-            	User.find({handle: tweet.user.screen_name}, function(error, data) {
-            		if (error) {
-            			console.log('Unable to connect to database.');
-            			return;
-            		}
-
-            		if (typeof data === 'object') {
-            			console.log('Skipping user.');
-            			return;
-            		}
-            	});
-
-            	// Create a new user, we don't want to tweet to them again in the future.
-            	var newUser = User({
-            		handle: tweet.user.screen_name,
-            		created_at: new Date()
-            	});
-
-            	newUser.save(function(error) {
-            		if (error) {
-            			console.log('Could not save user to database.');
-            			return;
-            		}
-            	});
-
-                // Post a reply to that user.
-                client.post('statuses/update', {
-                    status: '@' + tweet.user.screen_name + " " + global.replyString,
-                    in_reply_to_status_id: tweet.id_str
-                },
-
-                function(error, tweet, response) {
+                // Have we already tweeted to this user?
+                User.find({handle: tweet.user.screen_name}, function(error, data) {
                     if (error) {
-                    	console.log('Error occured writing tweet.');
-	            		return;
+                        console.log('Unable to connect to database.');
+                        return;
                     }
 
-                    console.log('Tweeted to user with no errors.');
-                });
+                    else if (typeof data === 'object') {
+                        console.log('Skipping user.');
+                        // return;
+                    }
+
+                    // Create a new user, we don't want to tweet to them again in the future.
+                    var newUser = User({
+                        handle: tweet.user.screen_name,
+                        created_at: new Date()
+                    });
+
+                    newUser.save(function(error) {
+                        if (error) {
+                            console.log('Could not save user to database.');
+                            return;
+                        }
+                    });
+
+                    // Post a reply to that user.
+                    client.post('statuses/update', {
+                        status: '@' + tweet.user.screen_name + " " + global.replyString,
+                        in_reply_to_status_id: tweet.id_str
+                    },
+
+                    function(error, tweet, response) {
+                        if (error) {
+                            console.log('Error occured writing tweet.');
+                            return;
+                        }
+
+                        console.log('Tweeted to (' + thisTweet.user.screen_name + ') with no errors.');
+                    });
+                });                
             }
         });
     });
 };
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Main logic.
