@@ -1,6 +1,9 @@
 var Twitter = require('twitter');
 var mongoose = require('mongoose');
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// Database configuration.
+
 mongoose.connect('mongodb://localhost/twitter');
 
 var db = mongoose.connection;
@@ -13,7 +16,7 @@ userSchema = mongoose.Schema({
 var User = mongoose.model('User', userSchema);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// Application configuration.
+// Twitter configuration.
 
 require('./env.js');
 
@@ -35,10 +38,11 @@ global.replyString     = "Ain't none y'all old enough to go to the damn club!";
 
 var loop = function() {
 
-	console.log(new Date() + ' Searching for tweets...');
+	console.log('\n' + new Date() + ' Searching for tweets...');
 
-    client.get('search/tweets', {q: global.searchString, count: 10, result_type: 'recent'}, function(error, tweets, response) {
-        
+	// Search for Tweets.
+    client.get('search/tweets', {q: global.searchString, count: 3, result_type: 'recent'}, function (error, tweets, response) {
+
         if (error) {
             console.log('An error occured getting tweets. ' + error);
             return;
@@ -49,11 +53,13 @@ var loop = function() {
         	return;
         }
 
+        // We have tweets, let's make some replies.
         tweets.statuses.forEach(function(tweet) {
 
             // Don't reply to retweets.
             if (tweet.retweeted_status == undefined) {
 
+            	// Have we already tweeted to this user?
             	User.find({handle: tweet.user.screen_name}, function(error, data) {
             		if (error) {
             			console.log('Unable to connect to database.');
@@ -66,7 +72,7 @@ var loop = function() {
             		}
             	});
 
-            	// Create a user.  We don't want to Tweet to them again.
+            	// Create a new user, we don't want to tweet to them again in the future.
             	var newUser = User({
             		handle: tweet.user.screen_name,
             		created_at: new Date()
@@ -85,14 +91,13 @@ var loop = function() {
                     in_reply_to_status_id: tweet.id_str
                 },
 
-                // Handle errors.
                 function(error, tweet, response) {
                     if (error) {
                         console.log("Can't post tweet because of an error. " + error);
                         return;
                     }
 
-                    console.log('Replied to ' + tweet.user.screen_name + ' with no errors.');
+                    console.log('Tweeted to user with no errors.');
                 });
             }
         });
