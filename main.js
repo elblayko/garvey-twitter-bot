@@ -1,6 +1,12 @@
 var Twitter = require('twitter');
 var mongoose = require('mongoose');
 
+function print_r(r) {
+	r.forEach(function(item) {
+		console.log(item);
+	});
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Database configuration.
 
@@ -41,7 +47,7 @@ var loop = function() {
 	console.log('\n' + new Date() + ' Searching for tweets...');
 
 	// Search for Tweets.
-    client.get('search/tweets', {q: global.searchString, count: 5, result_type: 'recent'}, function (error, tweets, response) {
+    client.get('search/tweets', {q: global.searchString, count: 3, result_type: 'recent'}, function (error, tweets, response) {
 
         if (error) {
             console.log('An error occured getting tweets. ' + error);
@@ -56,6 +62,8 @@ var loop = function() {
         // We have tweets, let's make some replies.
         tweets.statuses.forEach(function(tweet) {
 
+        	var thisTweet = tweet;
+
             // Don't reply to retweets.
             if (tweet.retweeted_status == undefined) {
 
@@ -67,7 +75,7 @@ var loop = function() {
             		}
 
             		if (typeof data === 'object') {
-            			console.log('Already tweeted to user.');
+            			console.log('Skiping user.');
             			return;
             		}
             	});
@@ -93,8 +101,7 @@ var loop = function() {
 
                 function(error, tweet, response) {
                     if (error) {
-                        console.log("Can't post tweet because of an error. " + error);
-                        return;
+	            		return;
                     }
 
                     console.log('Tweeted to user with no errors.');
@@ -109,4 +116,4 @@ var loop = function() {
 // Main logic.
 
 loop();
-setInterval(loop, 60000);  // 1 minute.
+setInterval(loop, 180000);  // 3 minutes.
