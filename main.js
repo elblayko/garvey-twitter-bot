@@ -1,12 +1,6 @@
 var Twitter = require('twitter');
 var mongoose = require('mongoose');
 
-function print_r(r) {
-	r.forEach(function(item) {
-		console.log(item);
-	});
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Database configuration.
 
@@ -46,7 +40,7 @@ var loop = function() {
 
 	console.log('\n' + new Date() + ' Searching for tweets...');
 
-	// Search for Tweets.
+	// Search for 3 tweets only.
     client.get('search/tweets', {q: global.searchString, count: 3, result_type: 'recent'}, function (error, tweets, response) {
 
         if (error) {
@@ -75,7 +69,7 @@ var loop = function() {
             		}
 
             		if (typeof data === 'object') {
-            			console.log('Skiping user.');
+            			console.log('Skipping user.');
             			return;
             		}
             	});
@@ -101,6 +95,7 @@ var loop = function() {
 
                 function(error, tweet, response) {
                     if (error) {
+                    	console.log('Error occured writing tweet.');
 	            		return;
                     }
 
@@ -116,4 +111,4 @@ var loop = function() {
 // Main logic.
 
 loop();
-setInterval(loop, 180000);  // 3 minutes.
+setInterval(loop, 300000);  // 5 minutes.
