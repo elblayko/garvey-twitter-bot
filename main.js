@@ -41,7 +41,7 @@ var loop = function() {
 	console.log('\n' + new Date() + ' Searching for tweets...');
 
 	// Search for Tweets.
-    client.get('search/tweets', {q: global.searchString, count: 3, result_type: 'recent'}, function (error, tweets, response) {
+    client.get('search/tweets', {q: global.searchString, count: 5, result_type: 'recent'}, function (error, tweets, response) {
 
         if (error) {
             console.log('An error occured getting tweets. ' + error);
@@ -109,4 +109,4 @@ var loop = function() {
 // Main logic.
 
 loop();
-setInterval(loop, 900000);  // 15 minutes.
+setInterval(loop, 60000);  // 1 minute.
