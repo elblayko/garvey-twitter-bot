@@ -35,11 +35,11 @@ var getTweets = function() {
 
     var deferred = q.defer();
 
-    console.log(new Date() + ' Searching for tweets.');
+    console.log(new Date());
 
     client.get('search/tweets', {
         q: global.searchString,
-        count: 25,
+        count: 20,
         result_type: 'recent'
     }, 
 
@@ -53,6 +53,7 @@ var getTweets = function() {
         }
 
         deferred.resolve(tweets);
+        console.log('Fetched ' + tweets.statuses.length + ' tweets.');
     });
 
     return deferred.promise;
@@ -62,29 +63,20 @@ var writeTweet = function(tweet) {
 
     // Is this tweet a retweet?
     if (tweet.retweeted_status != undefined) {
-        console.log('Tweet is a retweet.');
         return false;
     }
 
     // Have we tweeted to this user already?
     User.find({handle: tweet.user.screen_name}, function(error, data) {
         if (error) {            
-            console.log('Already tweeted to user.');
             return false;
         }
     });
 
-    // Create a new user, we won't bother them again.
+    // New user definition.
     var newUser = User({
         handle: tweet.user.screen_name,
         created_at: new Date()
-    });
-
-    newUser.save(function(error) {
-        if (error) {
-            console.error('Error writing user to database.');
-            return false;
-        }
     });
 
     // Post a tweet to the user.
@@ -95,13 +87,31 @@ var writeTweet = function(tweet) {
 
     function (error, tw, response) {
         if (error) {
-            console.error('Error occured writing tweet: ' + tw.message);
-            return;
+            if (error.code == 187) { // Already tweeted to user.
+                // Didn't get them in the database before.
+                newUser.save(function(error) {
+                    if (error) {
+                        console.error('Error writing user to database.');
+                        return false;
+                    }
+                });
+            }
+            else {
+                console.error('Error occured writing tweet: ' + error.message);
+            }            
+            return false;
         }
-
-        global.currentTweetIndex++;
-        console.log('Tweeted to ' + tweet.user.screen_name);
     });
+
+    // Create a new user, we won't bother them again.
+    newUser.save(function(error) {
+        if (error) {
+            console.error('Error writing user to database.');
+            return false;
+        }
+    });
+
+    console.log('Tweeted to ' + tweet.user.screen_name);
 
     return true;
 };
@@ -137,6 +147,6 @@ getTweets().then(function(tweets) {
         }
         while (result == false);
 
-    }, 15000);
+    }, 270000);
 
 }, console.log);
