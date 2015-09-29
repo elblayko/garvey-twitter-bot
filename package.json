@@ -5,6 +5,7 @@
   "author": "Blake Renton",
   "dependencies": {
     "mongoose": "^4.1.8",
+    "q": "^1.4.1",
     "twitter": "^1.2.5"
   }
 }
