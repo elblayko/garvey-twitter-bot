@@ -31,33 +31,49 @@ var client = new Twitter({
 global.searchString    = "going to the club";
 global.replyString     = "Ain't none y'all old enough to go to the damn club!";
 
+/**
+ *  @name           getTweets
+ *  @description    Retrieves posts from the Twitter API relevant to our search query.
+ *  @returns        Promise
+ */
+
 var getTweets = function() {
 
     var deferred = q.defer();
 
-    console.log(new Date());
-
+    // Search settings.
     client.get('search/tweets', {
         q: global.searchString,
-        count: 20,
+        count: 10,
         result_type: 'recent'
-    }, 
+    },
 
     function(error, tweets, response) {
+
+        // Some error occured.
         if (error) {
             return deferred.reject(error);
         }
 
+        // No relevant tweets found.
         if (tweets.length == 0) {
             return deferred.reject('No tweets found relevant to search query.');
         }
 
+        // All good.
         deferred.resolve(tweets);
-        console.log('Fetched ' + tweets.statuses.length + ' tweets.');
+        console.log(new Date() + '\nFetched ' + tweets.statuses.length + ' tweets.');
     });
 
     return deferred.promise;
  };
+
+/**
+ *  @name           writeTweet
+ *  @param          tweet - Tweet object
+ *  @description    Posts a tweet to Twitter in response to a user's post.
+ *  @returns        True if successful, false if an error occured.
+ */
 
 var writeTweet = function(tweet) {
 
@@ -69,6 +85,10 @@ var writeTweet = function(tweet) {
     // Have we tweeted to this user already?
     User.find({handle: tweet.user.screen_name}, function(error, data) {
         if (error) {            
+            return false;
+        }
+
+        if (data.length > 0) {
             return false;
         }
     });
@@ -87,18 +107,16 @@ var writeTweet = function(tweet) {
 
     function (error, tw, response) {
         if (error) {
-            if (error.code == 187) { // Already tweeted to user.
-                // Didn't get them in the database before.
+            if (error.code == 187) { // Already tweeted to user, didn't get them in the database before.
                 newUser.save(function(error) {
                     if (error) {
                         console.error('Error writing user to database.');
-                        return false;
                     }
                 });
             }
             else {
                 console.error('Error occured writing tweet: ' + error.message);
-            }            
+            }
             return false;
         }
     });
@@ -112,7 +130,6 @@ var writeTweet = function(tweet) {
     });
 
     console.log('Tweeted to ' + tweet.user.screen_name);
-
     return true;
 };
 
@@ -124,12 +141,12 @@ getTweets().then(function(tweets) {
     var tweets = tweets.statuses;
     var currentTweetIndex = 0;
 
-    // Execute only once per minute.
+    // Execute every three minutes.
     setInterval(function() {
 
         // Check that we haven't ran out of tweets.
         // If we have, reset the index and get more.       
-        if (currentTweetIndex == tweets.length - 1) {
+        if (currentTweetIndex == tweets.length - 1 || currentTweetIndex > 5) {
             getTweets().then(function(tw) {
                 currentTweetIndex = 0;
                 tweets = tw.statuses;
@@ -147,6 +164,6 @@ getTweets().then(function(tweets) {
         }
         while (result == false);
 
-    }, 270000);
+    }, 180000); // 3 minutes.
 
 }, console.log);
